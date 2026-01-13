@@ -61,10 +61,12 @@ graph TD
 
 | Wireless IDE | AI Agent |
 | :---: | :---: |
-| <img src="docs/ide_preview.png" width="300" /> | <img src="docs/ai_preview.png" width="300" /> |
+<img width="1905" height="499" alt="Screenshot 2026-01-13 113227" src="https://github.com/user-attachments/assets/3dc9f84b-fc93-4cd0-84bd-990e7b04aa5d" /><img width="1907" height="923" alt="Screenshot 2026-01-13 113154" src="https://github.com/user-attachments/assets/d349fb7d-37db-404c-95e8-374bd8ec0251" />
+
+
 
 ## 🤝 Contributing
 Built for the **Edge Computing** community. PRs welcome for optimizing memory usage further!
 
 ## 📜 License
-MIT © 2026 Shashank Kumar
+MIT © 2026 Shashank 
