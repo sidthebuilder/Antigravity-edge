@@ -1,0 +1,16 @@
+{
+  "name": "antigravity-ide",
+  "version": "1.0.0",
+  "description": "Ultra-lightweight IDE for Android Servers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "monitor": "bash monitor.sh"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ws": "^8.13.0",
+    "node-pty": "^1.0.0",
+    "cors": "^2.8.5"
+  }
+}

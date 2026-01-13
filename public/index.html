@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity IDE</title>
+    <style>
+        :root {
+            --bg: #0a0a12;
+            --surface: #161622;
+            --accent: #7d5fff;
+            --text: #e0e0e0;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 250px;
+            background: var(--surface);
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #file-tree {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .file-item:hover {
+            background: #2a2a35;
+            color: #fff;
+        }
+
+        .file-item.active {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        #main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #editor-container {
+            flex: 1;
+            background: #1e1e1e;
+        }
+
+        #terminal-container {
+            height: 200px;
+            background: #000;
+            border-top: 1px solid #333;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        /* AI Chat Overlay */
+        #ai-chat {
+            position: fixed;
+            bottom: 220px;
+            right: 20px;
+            width: 300px;
+            background: var(--surface);
+            border: 1px solid #333;
+            border-radius: 8px;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        #ai-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 12px;
+        }
+
+        #ai-input {
+            border: none;
+            background: #2a2a35;
+            color: #fff;
+            padding: 10px;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+    <!-- Load Monaco Editor (CDN for simplicity in this prototype, usually we'd vendor it) -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main"
+        href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/editor/editor.main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.1.0/css/xterm.css" />
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <div style="padding: 10px; font-weight: bold; color: var(--accent);">ANTIGRAVITY</div>
+        <div id="file-tree">Loading...</div>
+
+        <!-- Git Panel -->
+        <div style="padding: 10px; border-top: 1px solid #333;">
+            <div style="font-size:12px; color:#666; margin-bottom:5px;">GIT CONTROLS</div>
+            <button class="btn" onclick="gitStatus()" style="width:100%">Status</button>
+            <button class="btn" onclick="gitCommit()" style="width:100%">Commit All</button>
+            <button class="btn" onclick="gitPush()" style="width:100%; background:#2a2a35;">Push</button>
+        </div>
+
+        <div style="padding: 10px;">
+            <button class="btn" onclick="toggleAI()">Toggle AI</button>
+        </div>
+    </div>
+
+    <div id="main">
+        <div id="editor-container"></div>
+        <div id="terminal-container"></div>
+    </div>
+
+    <div id="ai-chat">
+        <div id="ai-messages">
+            <div>System: AI Neural Link Active.</div>
+        </div>
+        <input type="text" id="ai-input" placeholder="Ask Antigravity..." onkeypress="handleAI(event)">
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.1.0/lib/xterm.js"></script>
+    <script>
+        // -- EDITOR SETUP --
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.38.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            window.editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: "// Welcome to Antigravity IDE\n// Running on your Redmi 8A Dual\n\nconsole.log('Gravity is just a theory.');",
+                language: 'javascript',
+                theme: 'vs-dark',
+                automaticLayout: true
+            });
+
+            // Ctrl+S to Save
+            window.editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+                saveFile();
+            });
+
+            // RESTORE SESSION
+            restoreSession();
+        });
+
+        let currentFile = null;
+
+        // -- SESSION MANAGEMENT (TIME CAPSULE) --
+        async function restoreSession() {
+            try {
+                const res = await fetch('/api/config?token=gravity-is-a-myth');
+                const config = await res.json();
+                if (config.lastFile) {
+                    openFile(config.lastFile);
+                }
+            } catch (e) { console.log('No session to restore'); }
+        }
+
+        async function saveSession(filePath) {
+            await fetch('/api/config?token=gravity-is-a-myth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lastFile: filePath })
+            });
+        }
+
+
+        // -- FILE SYSTEM --
+        async function loadFiles() {
+            const res = await fetch('/api/files');
+            const files = await res.json();
+            const tree = document.getElementById('file-tree');
+            tree.innerHTML = '';
+            files.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.textContent = (f.isDirectory ? '[D] ' : '') + f.name;
+                div.onclick = () => openFile(f.path);
+                tree.appendChild(div);
+            });
+        }
+
+        async function openFile(path) {
+            currentFile = path;
+            saveSession(path); // Save state
+            const res = await fetch(`/api/read?path=${encodeURIComponent(path)}`);
+            const data = await res.json();
+            if (window.editor) window.editor.setValue(data.content);
+        }
+
+        async function saveFile() {
+            if (!currentFile) return;
+            const content = window.editor.getValue();
+            await fetch('/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: currentFile, content })
+            });
+            alert('Saved!');
+        }
+
+        loadFiles();
+
+        // -- GIT --
+        async function gitStatus() {
+            const res = await fetch('/api/git/status?token=gravity-is-a-myth');
+            const data = await res.json();
+            alert(data.output || data.error || "Working tree clean");
+        }
+
+        async function gitCommit() {
+            const msg = prompt("Commit Message:");
+            if (!msg) return;
+            const res = await fetch('/api/git/commit?token=gravity-is-a-myth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            });
+            const data = await res.json();
+            alert(data.output || data.error);
+        }
+
+        async function gitPush() {
+            const res = await fetch('/api/git/push?token=gravity-is-a-myth', { method: 'POST' });
+            const data = await res.json();
+            alert(data.output || data.error);
+        }
+
+        // -- TERMINAL --
+        const term = new Terminal({
+            theme: { background: '#000000' }
+        });
+        term.open(document.getElementById('terminal-container'));
+
+        // Connect to WebSocket Terminal
+        const ws = new WebSocket('ws://' + window.location.host);
+
+        term.onData(data => ws.send(data));
+        ws.onmessage = event => term.write(event.data);
+
+        // -- AI FEATURE --
+        function toggleAI() {
+            const chat = document.getElementById('ai-chat');
+            chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        async function handleAI(e) {
+            if (e.key === 'Enter') {
+                const input = document.getElementById('ai-input');
+                const msgs = document.getElementById('ai-messages');
+                const q = input.value;
+
+                msgs.innerHTML += `<div style="color: #aaa;">You: ${q}</div>`;
+                input.value = '';
+
+                // Call Backend Proxy
+                const res = await fetch('/api/ai-completion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: q })
+                });
+                const data = await res.json();
+
+                msgs.innerHTML += `<div style="color: var(--accent);">AI: ${data.response}</div>`;
+                msgs.scrollTop = msgs.scrollHeight;
+            }
+        }
+    </script>
+</body>
+
+</html>

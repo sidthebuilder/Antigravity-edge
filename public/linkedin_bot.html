@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn AI Agent</title>
+    <style>
+        body {
+            background: #0a0a12;
+            color: #fff;
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #7d5fff;
+        }
+
+        .card {
+            background: #161622;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            background: #000;
+            color: #ddd;
+            border: 1px solid #333;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        button {
+            background: #7d5fff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #6c4af5;
+        }
+
+        select {
+            background: #000;
+            color: #fff;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        #output {
+            white-space: pre-wrap;
+            margin-top: 20px;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>LinkedIn AI Agent 🚀</h1>
+    <div class="card">
+        <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+            <label style="flex:1;">Topic / Achievement:</label>
+            <button onclick="suggestTopic()"
+                style="width: auto; margin:0; padding: 5px 10px; font-size: 12px; background: #2a2a35;">🎲 Inspire
+                Me</button>
+        </div>
+        <textarea id="topic"
+            placeholder="e.g. I successfully turned my Android phone into a web server using Node.js..."></textarea>
+
+        <label>Tone:</label>
+        <select id="tone">
+            <option value="Viral Story">Viral Story (High Engagement)</option>
+            <option value="Professional Update">Professional Update</option>
+            <option value="Software Engineer Analysis">Technical Analysis</option>
+        </select>
+
+        <button onclick="generate()">✨ WRITE POST</button>
+    </div>
+
+    <div class="card" id="result" style="display:none;">
+        <h3>AI Draft:</h3>
+        <div id="output">Generating...</div>
+        <button onclick="copyText()" style="background:#333;">Copy to Clipboard</button>
+    </div>
+
+    <script>
+        async function generate() {
+            const topic = document.getElementById('topic').value;
+            const tone = document.getElementById('tone').value;
+            const output = document.getElementById('output');
+            const resultBox = document.getElementById('result');
+
+            if (!topic) return alert("Please enter a topic!");
+
+            resultBox.style.display = 'block';
+            output.textContent = "Connecting to Neural Core...";
+
+            // The Prompt Engineering
+            const prompt = `Write a LinkedIn post. 
+            Topic: ${topic}. 
+            Tone: ${tone}. 
+            Format: Use short paragraphs, emojis, and hashtags. Make it engaging.`;
+
+            try {
+                const res = await fetch('/api/ai-completion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                const data = await res.json();
+                output.textContent = data.response;
+            } catch (e) {
+                output.textContent = "Error: " + e.message;
+            }
+        }
+
+        function copyText() {
+            navigator.clipboard.writeText(document.getElementById('output').textContent);
+            alert("Copied!");
+        }
+
+        async function suggestTopic() {
+            const topicBox = document.getElementById('topic');
+            topicBox.value = "Thinking of a cool topic...";
+            try {
+                const res = await fetch('/api/ai-completion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: "Give me one short, viral LinkedIn post topic idea for a Senior AI Training Specialist who just built a Node.js server on an Android phone." })
+                });
+                const data = await res.json();
+                topicBox.value = data.response.replace(/"/g, '');
+            } catch (e) {
+                topicBox.value = "Error getting idea.";
+            }
+        }
+    </script>
+</body>
+
+</html>
